@@ -125,6 +125,32 @@ class HF_API {
 	
 	/**
 	 *
+	 * @return bool
+	 */
+	function sendCurl($url, $post_fields, $http_headers=[]) {
+		$ch = curl_init();
+		
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_fields);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+		
+		if($http_headers) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $http_headers);
+		}
+		
+		$response = curl_exec($ch);
+		
+		curl_close($ch);
+		
+		return $response;
+	}
+	
+	
+	/**
+	 *
 	 * @return null
 	 */
 	function startAuth() {
@@ -169,23 +195,12 @@ class HF_API {
 			return false;
 		}
 
-		$ch = curl_init();
-		
-		curl_setopt($ch, CURLOPT_URL, $this->authorize_url);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, [
+		$response = $this->sendCurl($this->authorize_url, [
 			'grant_type' => "authorization_code",
 			'client_id' => $this->client_id,
 			'client_secret' => $this->secret_key,
 			'code' => $code
 		]);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-		
-		$response = curl_exec($ch);
-		
-		curl_close($ch);
 		
 		if(empty($response)) {
 			$this->setError('BAD_RESPONSE_FROM_HF_OR_CURL_ERROR');
@@ -218,7 +233,7 @@ class HF_API {
 		
 		return true;
 	}
-	
+
 	
 	/**
 	 *
@@ -234,22 +249,10 @@ class HF_API {
 			$this->setError('NO_DATA_REQUESTED');
 			return false;
 		}
-
-		$ch = curl_init();
 		
-		curl_setopt($ch, CURLOPT_URL, $this->read_url);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, [
+		$response = $this->sendCurl($this->read_url, [
 			'asks' => json_encode($asks)
-		]);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-		curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$this->access_token}"]);
-		
-		$response = curl_exec($ch);
-		
-		curl_close($ch);
+		], ["Authorization: Bearer {$this->access_token}"]);
 		
 		if(empty($response)) {
 			$this->setError('BAD_RESPONSE_FROM_HF_OR_CURL_ERROR');
@@ -273,6 +276,116 @@ class HF_API {
 		}
 		
 		return $response;
+	}
+	
+	
+	/**
+	 *
+	 * @return bool
+	 */
+	function write($asks) {
+		if(!$this->access_token) {
+			$this->setError('ACCESS_TOKEN_NOT_SET');
+			return false;
+		}
+		
+		if(!$asks) {
+			$this->setError('NO_DATA_REQUESTED');
+			return false;
+		}
+		
+		$response = $this->sendCurl($this->write_url, [
+			'asks' => json_encode($asks)
+		], ["Authorization: Bearer {$this->access_token}"]);
+		
+		if(empty($response)) {
+			$this->setError('BAD_RESPONSE_FROM_HF_OR_CURL_ERROR');
+			return false;
+		}
+		
+		try {
+			$response = json_decode($response, true);
+		} catch(Exception $e) {
+			$this->setError('BAD_RESPONSE_FROM_HF');
+			return false;
+		}
+		
+		if(array_key_exists("success", $response) && $response['success'] == false) {
+			if(array_key_exists("message", $response)) {
+				$this->setError($response['message']);
+			} else {
+				$this->setError('BAD_RESPONSE_FROM_HF');
+			}
+			return false;
+		}
+		
+		return $response;
+	}
+	
+	
+	/**
+	 *
+	 * @return bool
+	 */
+	function makePost($tid, $message) {
+		if(!$this->access_token) {
+			$this->setError('ACCESS_TOKEN_NOT_SET');
+			return false;
+		}
+		
+		$tid = (int)$tid;
+		if($tid < 0) {
+			$this->setError('NO_TID_SET');
+			return false;
+		}
+		
+		if(!$message || mb_strlen($message) < 3) {
+			$this->setError('NO_MESSAGE_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"posts" => [
+				"_tid" => $tid,
+				"_message" => $message
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @return bool
+	 */
+	function makeThread($fid, $subject, $message) {
+		if(!$this->access_token) {
+			$this->setError('ACCESS_TOKEN_NOT_SET');
+			return false;
+		}
+		
+		$fid = (int)$fid;
+		if($fid < 0) {
+			$this->setError('NO_FID_SET');
+			return false;
+		}
+		
+		if(!$subject || mb_strlen($subject) < 3) {
+			$this->setError('NO_SUBJECT_SET');
+			return false;
+		}
+		
+		if(!$message || mb_strlen($message) < 3) {
+			$this->setError('NO_MESSAGE_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"threads" => [
+				"_fid" => $fid,
+				"_subject" => $subject,
+				"_message" => $message
+			]
+		]);
 	}
 	
 	
