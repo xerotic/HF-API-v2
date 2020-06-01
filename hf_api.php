@@ -7,12 +7,6 @@
  *
  */
  
- 
-/**
-*	Constructor
-*	$api
-*
-*/
 
 class HF_API {
 	
@@ -139,7 +133,7 @@ class HF_API {
 			return false;
 		}
 		
-		header("Location: https://hackforums.net/api/v2/authorize?response_type=code&client_id={$this->client_id}&state={$this->state}");
+		header("Location: {$this->authorize_url}?response_type=code&client_id={$this->client_id}&state={$this->state}");
 		exit;
 	}
 	
