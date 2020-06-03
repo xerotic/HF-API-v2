@@ -69,6 +69,18 @@ class HF_API {
 	
 	/**
 	 *
+	 * @return null
+	 */
+	function checkAccessToken() {
+		if(!$this->access_token) {
+			$this->setError('ACCESS_TOKEN_NOT_SET');
+			return false;
+		}
+	}
+	
+	
+	/**
+	 *
 	 * @return string
 	 */
 	function getUID() {
@@ -240,10 +252,7 @@ class HF_API {
 	 * @return bool
 	 */
 	function read($asks) {
-		if(!$this->access_token) {
-			$this->setError('ACCESS_TOKEN_NOT_SET');
-			return false;
-		}
+		$this->checkAccessToken();
 		
 		if(!$asks) {
 			$this->setError('NO_DATA_REQUESTED');
@@ -284,10 +293,7 @@ class HF_API {
 	 * @return bool
 	 */
 	function write($asks) {
-		if(!$this->access_token) {
-			$this->setError('ACCESS_TOKEN_NOT_SET');
-			return false;
-		}
+		$this->checkAccessToken();
 		
 		if(!$asks) {
 			$this->setError('NO_DATA_REQUESTED');
@@ -328,10 +334,7 @@ class HF_API {
 	 * @return bool
 	 */
 	function makePost($tid, $message) {
-		if(!$this->access_token) {
-			$this->setError('ACCESS_TOKEN_NOT_SET');
-			return false;
-		}
+		$this->checkAccessToken();
 		
 		$tid = (int)$tid;
 		if($tid < 0) {
@@ -358,10 +361,7 @@ class HF_API {
 	 * @return bool
 	 */
 	function makeThread($fid, $subject, $message) {
-		if(!$this->access_token) {
-			$this->setError('ACCESS_TOKEN_NOT_SET');
-			return false;
-		}
+		$this->checkAccessToken();
 		
 		$fid = (int)$fid;
 		if($fid < 0) {
@@ -384,6 +384,41 @@ class HF_API {
 				"_fid" => $fid,
 				"_subject" => $subject,
 				"_message" => $message
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @return bool
+	 */
+	function sendBytes($uid, $amount, $reason="", $pid=0) {
+		$this->checkAccessToken();
+		
+		$uid = (int)$uid;
+		if($uid <= 0) {
+			$this->setError('NO_UID_SET');
+			return false;
+		}
+		
+		$amount = (int)$amount;
+		if($amount <= 0) {
+			$this->setError('NO_AMOUNT_SET');
+			return false;
+		}
+		
+		if($reason && mb_strlen($reason) > 192) {
+			$this->setError('REASON_MAX_LENGTH_EXCEEDED_192');
+			return false;
+		}
+		
+		return $this->write([
+			"bytes" => [
+				"_uid" => $uid,
+				"_amount" => $amount,
+				"_reason" => $reason,
+				"_pid" => $pid
 			]
 		]);
 	}
