@@ -76,6 +76,8 @@ class HF_API {
 			$this->setError('ACCESS_TOKEN_NOT_SET');
 			return false;
 		}
+		
+		return true;
 	}
 	
 	
@@ -252,7 +254,9 @@ class HF_API {
 	 * @return bool
 	 */
 	function read($asks) {
-		$this->checkAccessToken();
+		if(!$this->checkAccessToken()) {
+			return;
+		}
 		
 		if(!$asks) {
 			$this->setError('NO_DATA_REQUESTED');
@@ -293,7 +297,9 @@ class HF_API {
 	 * @return bool
 	 */
 	function write($asks) {
-		$this->checkAccessToken();
+		if(!$this->checkAccessToken()) {
+			return;
+		}
 		
 		if(!$asks) {
 			$this->setError('NO_DATA_REQUESTED');
@@ -334,7 +340,9 @@ class HF_API {
 	 * @return bool
 	 */
 	function makePost($tid, $message) {
-		$this->checkAccessToken();
+		if(!$this->checkAccessToken()) {
+			return;
+		}
 		
 		$tid = (int)$tid;
 		if($tid < 0) {
@@ -361,7 +369,9 @@ class HF_API {
 	 * @return bool
 	 */
 	function makeThread($fid, $subject, $message) {
-		$this->checkAccessToken();
+		if(!$this->checkAccessToken()) {
+			return;
+		}
 		
 		$fid = (int)$fid;
 		if($fid < 0) {
@@ -394,7 +404,9 @@ class HF_API {
 	 * @return bool
 	 */
 	function sendBytes($uid, $amount, $reason="", $pid=0) {
-		$this->checkAccessToken();
+		if(!$this->checkAccessToken()) {
+			return;
+		}
 		
 		$uid = (int)$uid;
 		if($uid <= 0) {
