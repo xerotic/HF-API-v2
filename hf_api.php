@@ -322,6 +322,10 @@ class HF_API {
 			return false;
 		}
 		
+		if(!is_array($response)) {
+			$response = [];
+		}
+		
 		if(array_key_exists("success", $response) && $response['success'] == false) {
 			if(array_key_exists("message", $response)) {
 				$this->setError($response['message']);
@@ -431,6 +435,52 @@ class HF_API {
 				"_amount" => $amount,
 				"_reason" => $reason,
 				"_pid" => $pid
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @return bool
+	 */
+	function vaultDeposit($amount) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$amount = (int)$amount;
+		if($amount <= 0) {
+			$this->setError('NO_AMOUNT_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"bytes" => [
+				"_deposit" => $amount
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @return bool
+	 */
+	function vaultWithdraw($amount) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$amount = (int)$amount;
+		if($amount <= 0) {
+			$this->setError('NO_AMOUNT_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"bytes" => [
+				"_withdraw" => $amount
 			]
 		]);
 	}
