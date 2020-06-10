@@ -15,7 +15,7 @@ class HF_API {
 	private $secret_key;
 	private $access_token;
 	private $uid;
-	private $errors;
+	private $errors = [];
 	private $state;
 	private $authorize_url = "https://hackforums.net/api/v2/authorize";
 	private $read_url = "https://hackforums.net/api/v2/read";
@@ -24,7 +24,7 @@ class HF_API {
  
 	 /**
 	 *
-	 * constructor method
+	 * @constructor method
 	 */
 	function __construct() {
 		$this->changeState();
@@ -139,7 +139,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function sendCurl($url, $post_fields, $http_headers=[]) {
 		$ch = curl_init();
@@ -165,7 +165,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return null
+	 * @
 	 */
 	function startAuth() {
 		if(!$this->client_id) {
@@ -180,7 +180,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function finishAuth($state="") {
 		$state = preg_replace("/[^A-Za-z0-9]/", "", $state);
@@ -251,7 +251,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function read($asks) {
 		if(!$this->checkAccessToken()) {
@@ -294,7 +294,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function write($asks) {
 		if(!$this->checkAccessToken()) {
@@ -341,7 +341,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function makePost($tid, $message) {
 		if(!$this->checkAccessToken()) {
@@ -370,7 +370,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function makeThread($fid, $subject, $message) {
 		if(!$this->checkAccessToken()) {
@@ -405,7 +405,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function sendBytes($uid, $amount, $reason="", $pid=0) {
 		if(!$this->checkAccessToken()) {
@@ -442,7 +442,30 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
+	 */
+	function vaultBalance() {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$read_vault = $this->read([
+			"me" => [
+				"vault" => true
+			]
+		]);
+		
+		if(!is_array($read_vault) || !array_key_exists('me', $read_vault) || !is_array($read_vault['me']) || !array_key_exists('vault', $read_vault['me'])) {
+			return 0;
+		} 
+		
+		return (int)$read_vault['me']['vault'];
+	}
+	
+	
+	/**
+	 *
+	 * @
 	 */
 	function vaultDeposit($amount) {
 		if(!$this->checkAccessToken()) {
@@ -465,7 +488,7 @@ class HF_API {
 	
 	/**
 	 *
-	 * @return bool
+	 * @
 	 */
 	function vaultWithdraw($amount) {
 		if(!$this->checkAccessToken()) {
@@ -481,6 +504,255 @@ class HF_API {
 		return $this->write([
 			"bytes" => [
 				"_withdraw" => $amount
+			]
+		]);
+	}
+	
+
+	/**
+	 *
+	 * @
+	 */
+	function newContract($ask) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$data = [
+			'_uid' => array_key_exists('_uid', $ask) ? $ask['_uid'] : 0,
+			'_theirproduct' => array_key_exists('_theirproduct', $ask) ? $ask['_theirproduct'] : "",
+			'_theircurrency' => array_key_exists('_theircurrency', $ask) ? $ask['_theircurrency'] : "",
+			'_theiramount' => array_key_exists('_theiramount', $ask) ? $ask['_theiramount'] : 0,
+			'_yourproduct' => array_key_exists('_yourproduct', $ask) ? $ask['_yourproduct'] : "",
+			'_yourcurrency' => array_key_exists('_yourcurrency', $ask) ? $ask['_yourcurrency'] : "",
+			'_youramount' => array_key_exists('_youramount', $ask) ? $ask['_youramount'] : 0,
+			'_tid' => array_key_exists('_tid', $ask) ? $ask['_tid'] : 0,
+			'_muid' => array_key_exists('_muid', $ask) ? $ask['_muid'] : 0,
+			'_timeout' => array_key_exists('_timeout', $ask) ? $ask['_timeout'] : 14,
+			'_position' => array_key_exists('_position', $ask) ? $ask['_position'] : "",
+			'_terms' => array_key_exists('_terms', $ask) ? $ask['_terms'] : "",
+			'_public' => (array_key_exists('_public', $ask) && $ask['_public']) ? "yes" : "",
+			'_address' => array_key_exists('_address', $ask) ? $ask['_address'] : ""
+		];
+		
+		if($data['_uid'] <= 0) {
+			$this->setError('NO_UID_SET_IN_DATA_ARRAY');
+			return false;
+		}
+		
+		if(!$data['_position']) {
+			$this->setError('NO_POSITION_SET_IN_DATA_ARRAY');
+			return false;
+		}
+		
+		if(!$data['_terms']) {
+			$this->setError('NO_TERMS_SET_IN_DATA_ARRAY');
+			return false;
+		}
+		
+		$write = [
+			"contracts" => [
+				"_action" => "new"
+			]
+		];
+		
+		foreach($data as $key => $field) {
+			$write['contracts'][$key] = $field;
+		}
+		
+		return $this->write($write);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function undoContract($cid) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "undo"
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function denyContract($cid) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "deny"
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function approveContract($cid, $address="") {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "approve",
+				"_address" => $address
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function middlemanDenyContract($cid) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "middleman_deny"
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function middlemanApproveContract($cid) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "middleman_approve"
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function vendorCancelContract($cid) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "vendor_cancel"
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function cancelContract($cid) {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "cancel"
+			]
+		]);
+	}
+	
+	
+	/**
+	 *
+	 * @
+	 */
+	function completeContract($cid, $txn="") {
+		if(!$this->checkAccessToken()) {
+			return;
+		}
+		
+		$cid = (int)$cid;
+		if($cid <= 0) {
+			$this->setError('NO_CID_SET');
+			return false;
+		}
+		
+		return $this->write([
+			"contracts" => [
+				"_cid" => $cid,
+				"_action" => "complete",
+				"_address" => $txn
 			]
 		]);
 	}
