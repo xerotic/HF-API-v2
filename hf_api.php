@@ -21,7 +21,7 @@ class HF_API
      * HF API constructor. Initializes the HF API class.
      * @constructor method
      */
-    private function __construct()
+    public function __construct()
     {
         $this->changeState();
     }

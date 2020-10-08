@@ -1,0 +1,6 @@
+{
+    "name": "xheaven/hf-api-v2",
+    "description": "Helpful code related to Hack Forums API v2",
+    "type": "library",
+    "require": {}
+}
