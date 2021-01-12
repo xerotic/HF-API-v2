@@ -5,7 +5,7 @@
  *
  * by Xerotic
  */
-class HF_API
+public class HF_API
 {
     private $client_id;
     private $secret_key;
